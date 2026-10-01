@@ -22,6 +22,12 @@ Score an entire retrieval batch against the query, retain the chunks that earn t
 <br />
 
 <div align="center">
+  <img src="assets/readme-hero-v2.png" alt="Illustration of retrieved documents passing through a relevance gate: useful evidence is retained and irrelevant context is redirected" width="100%" />
+</div>
+
+<br />
+
+<div align="center">
   <a href="docs/brag.mp4">
     <img src="docs/brag.jpg" alt="Demo of clef-compactor ranking retrieved chunks, cutting irrelevant context, and preserving the useful evidence" width="100%" />
   </a>
@@ -227,12 +233,6 @@ Errors derive from `ClefError`, so a single `except` covers authentication, rate
 - **Estimated token counts.** Budgets use `cl100k_base` as a close proxy rather than Cloudflare's exact tokenizer.
 - **Preview scoring.** Only the first 512 characters of each chunk are scored by default. Increase `chunk_preview_chars` if important context is deep in a chunk.
 - **Binary relevance.** Clef emits `P(relevant)`, not a graded “supporting vs. essential” signal.
-
-## Social preview
-
-<img src="assets/social-preview-v2.png" alt="Social preview artwork: document cards pass through a relevance filter, with useful context continuing in green and irrelevant context redirected in red" width="100%" />
-
-The new social asset is available at [`assets/social-preview-v2.png`](assets/social-preview-v2.png). Set it as the repository's social preview in GitHub under **Settings → General → Social preview**.
 
 ## Project links
 
