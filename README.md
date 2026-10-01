@@ -1,67 +1,67 @@
 <div align="center">
 
-<img src="assets/logo.png" alt="clef-compactor logo: retrieved chunks pass through a relevance gate and only the useful ones continue" width="200">
+<img src="assets/logo.png" alt="clef-compactor logo" width="148" />
 
 # clef-compactor
 
-**Keep the evidence. Cut the noise.**
+### Keep the evidence. Cut the noise.
 
-Query-aware RAG context compaction using [Cloudflare's Clef](https://blog.cloudflare.com/clef-decision-models/).
-Score a whole retrieval batch against the query in one API call, keep the chunks worth sending to your LLM.
+**Query-aware RAG context compaction with [Cloudflare Clef](https://blog.cloudflare.com/clef-decision-models/).**<br />
+Score an entire retrieval batch against the query, retain the chunks that earn their place, and send a smaller, auditable context to your LLM.
 
 [![CI](https://github.com/Gjusev/clef-compactor/actions/workflows/test.yml/badge.svg)](https://github.com/Gjusev/clef-compactor/actions/workflows/test.yml)
-[![PyPI](https://img.shields.io/pypi/v/clef-compactor)](https://pypi.org/project/clef-compactor/)
+[![PyPI](https://img.shields.io/pypi/v/clef-compactor?logo=pypi&logoColor=white)](https://pypi.org/project/clef-compactor/)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-Apache--2.0-4b5563)](LICENSE)
-[![Types](https://img.shields.io/badge/types-typed-30th%20street?color=0f766e)](src/clef_compactor/py.typed)
+[![Cloudflare Clef](https://img.shields.io/badge/Powered%20by-Cloudflare%20Clef-F38020?logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/workers-ai/models/clef/)
+[![License](https://img.shields.io/badge/License-Apache--2.0-4b5563)](LICENSE)
 
-[Quick start](#quick-start) · [How it works](#how-it-works) · [Measured results](#measured-results) · [clef vs laya](#clef-vs-laya) · [Limitations](#limitations)
+[Get started](#quick-start) · [Watch the demo](#demo) · [How it works](#how-it-works) · [Benchmarks](#benchmarks) · [Kaggle notebook](https://www.kaggle.com/code/gjusev/clef-compactor-evals)
 
 </div>
 
-<a href="docs/brag.mp4">
-  <img src="docs/brag.jpg" alt="clef-compactor demo: five retrieved chunks are scored, the irrelevant one is cut with a reason, and the kept three form the context with 34% fewer tokens" width="100%">
-</a>
+<br />
 
-<p align="center">
-  <a href="docs/brag.mp4"><strong>▶ Watch the 12-second demo</strong></a>
-  · <a href="docs/index.html">landing page</a>
-  · <a href="docs/how-it-works.svg">animated diagram</a>
-</p>
+<div align="center">
+  <a href="docs/brag.mp4">
+    <img src="docs/brag.jpg" alt="Demo of clef-compactor ranking retrieved chunks, cutting irrelevant context, and preserving the useful evidence" width="100%" />
+  </a>
+  <br />
+  <sub><strong>▶ 12-second product demo</strong> · <a href="docs/brag.mp4">Open video</a> · <a href="docs/index.html">View landing page</a></sub>
+</div>
 
-Your retriever returns 12 chunks. Your LLM reads all of them and you pay for all of them, including the ones about the Eiffel Tower when the user asked about refunds. clef-compactor asks Clef one question per chunk ("is this needed to answer the query?"), then fills a token budget with the best answers.
+## Why clef-compactor?
 
-Chunks are kept verbatim or removed with a recorded reason. The library never rewrites text, so citations stay auditable.
+Retrieval can be noisy. If a retriever returns 12 chunks, your LLM normally reads—and you pay for—all 12, even when several are off-topic. clef-compactor asks Clef whether each chunk is needed for the user's query, ranks the answers, then fills your token budget with the strongest evidence.
 
-## How it works
+| What it does | Why it matters |
+| --- | --- |
+| **Keeps text verbatim** | Citations and provenance remain intact—nothing is summarized or rewritten. |
+| **Explains every cut** | Dropped chunks are marked `irrelevant` or `budget_exhausted`. |
+| **Batches requests** | One Cloudflare call scores up to 64 chunks. |
+| **Fits your stack** | Sync and async clients, CLI, OpenAI-compatible handler, LangChain, and LlamaIndex adapters. |
 
-```
-                       clef-compactor
-                       ───────────────
- query ──────────────► │             │
-                       │  build      │
- chunks ─────────────► │  1 noul     │        ┌─────────────────────────┐
- [c1][c2]...[cN]       │  question   │──────► │  Cloudflare Clef API    │
-                       │  per chunk  │        │  P(relevant) per chunk  │
-                       │  (≤64/req)  │◄───────┴─────────────────────────┘
-                       │             │
-                       │  rank:      │
-                       │  score desc │        c1 P=0.93  ──► keep
-                       │  tokens asc │        c3 P=0.85  ──► keep
-                       │  index asc  │        c5 P=0.42  ──► cut (budget)
-                       │             │        c2 P=0.05  ──► cut (irrelevant)
-                       │  fill       │
-                       │  budget     │──────► CompactResult
-                       └─────────────┘        kept / dropped / scores
-                                              tokens, usage, cost estimate
-```
+<a id="demo"></a>
 
-One API call per 64 chunks. Dropped chunks carry a reason: `irrelevant` (below the threshold) or `budget_exhausted` (did not fit). Both are dataclasses, so you can log them or show them to a user.
+## Demo
+
+The video above is embedded as a clickable preview for GitHub compatibility. You can also play it directly here:
+
+<video src="docs/brag.mp4" poster="docs/brag.jpg" controls muted loop playsinline width="100%">
+  Your browser does not support embedded video. <a href="docs/brag.mp4">Open the 12-second demo</a>.
+</video>
+
+It shows five retrieved chunks flowing through the relevance gate: useful passages are retained, unrelated context is removed with a reason, and the final context is 34% smaller.
 
 ## Quick start
 
 ```bash
 pip install clef-compactor
+
+# PowerShell
+$env:CLEF_ACCOUNT_ID = "your_account_id"
+$env:CLEF_API_TOKEN = "your_api_token"
+
+# bash / zsh
 export CLEF_ACCOUNT_ID=your_account_id
 export CLEF_API_TOKEN=your_api_token
 ```
@@ -73,21 +73,22 @@ compactor = ClefCompactor()
 result = compactor.compact(
     "What is the refund policy?",
     retrieved_chunks,
-    token_budget=1000,
+    token_budget=1_000,
 )
 
-result.kept_texts()          # surviving chunks, ranked best first, text unchanged
-result.dropped[0].drop_reason  # DropReason.IRRELEVANT or BUDGET_EXHAUSTED
-result.saved_fraction        # e.g. 0.71 -> 71% fewer context tokens
-result.cost_estimate         # USD, input tokens at Cloudflare's $0.24/M
+context = "\n\n".join(result.kept_texts())  # exact original chunk text
+print(result.saved_fraction)                   # e.g. 0.71 = 71% fewer tokens
+print(result.dropped[0].drop_reason)           # irrelevant | budget_exhausted
 ```
+
+> Need a runnable, credential-free tour? Open [the example notebook](examples/demo.ipynb), which uses a canned API response.
 
 ### Async
 
 ```python
 from clef_compactor import AsyncClefCompactor
 
-compactor = AsyncClefCompactor(model="clef-flash")   # faster, slightly less precise
+compactor = AsyncClefCompactor(model="clef-flash")
 result = await compactor.compact(query, chunks, token_budget=800)
 await compactor.aclose()
 ```
@@ -99,12 +100,25 @@ clef-compact -q "refund policy" -d "chunk one" "chunk two" --budget 1000
 clef-compact -q "..." -d @chunk1.txt @chunk2.txt --json --model clef-flash
 ```
 
-A runnable walkthrough lives in [examples/demo.ipynb](examples/demo.ipynb); it executes offline against a canned API.
+## How it works
 
-### OpenAI-compatible endpoint
+<div align="center">
+  <img src="docs/how-it-works.svg" alt="Diagram: Clef scores each retrieved chunk, relevant chunks pass the threshold, and the remainder are cut with an auditable reason" width="100%" />
+</div>
 
-Any OpenAI SDK can talk to a compactor. `handle_chat_completions` takes an
-OpenAI request body and returns an OpenAI response:
+1. **Build a decision for each chunk.** The query and a configurable preview of every retrieved chunk are sent as Clef `noul` questions.
+2. **Score the batch.** Clef returns `P(relevant)` for each chunk; batches larger than 64 are split automatically.
+3. **Rank and fit the budget.** Chunks are sorted by relevance score, then token count and original position; the best ones are greedily retained until the budget is full.
+4. **Keep an audit trail.** The result contains kept and dropped chunks, scores, token counts, API usage, latency, and a cost estimate.
+
+## Integrations
+
+| OpenAI-compatible | LangChain | LlamaIndex |
+| --- | --- | --- |
+| Wrap a FastAPI endpoint and return an OpenAI response. | Use a document compressor in your retrieval pipeline. | Add a node postprocessor to an existing query engine. |
+
+<details>
+<summary><strong>OpenAI-compatible endpoint</strong></summary>
 
 ```python
 from fastapi import FastAPI
@@ -119,11 +133,11 @@ async def chat_completions(payload: dict):
     return handle_chat_completions(payload, compactor=compactor)
 ```
 
-Request shape: put the chunks in `clef.chunks`, or pass context as non-user
-messages. The response carries the compacted context in
-`choices[0].message.content` and before/after token counts in `usage`.
+Put chunks in `clef.chunks`, or supply context as non-user messages. The compacted context is returned in `choices[0].message.content`; before/after token counts are in `usage`.
+</details>
 
-### LangChain
+<details>
+<summary><strong>LangChain</strong></summary>
 
 ```bash
 pip install "clef-compactor[langchain]"
@@ -135,8 +149,10 @@ from clef_compactor.integrations.langchain import ClefDocumentCompressor
 compressor = ClefDocumentCompressor(token_budget=800)
 compressed = compressor.compress_documents(docs, query="refund policy?")
 ```
+</details>
 
-### LlamaIndex
+<details>
+<summary><strong>LlamaIndex</strong></summary>
 
 ```bash
 pip install "clef-compactor[llamaindex]"
@@ -150,108 +166,82 @@ query_engine = RetrieverQueryEngine(
     node_postprocessors=[ClefNodePostprocessor(token_budget=800)],
 )
 ```
+</details>
 
-## Measured results
+## Benchmarks
 
-Three measurement sources, each labelled for what it actually proves.
+### Local, open-weights evaluation
 
-**Real model, modest hardware** — open-weights `Cloudflare/clef-flash` (9B),
-float16 sharded across 2x Kaggle T4, 20 cases, 104 chunks. Produced by
-`python evals/run_eval.py --mode local`; results committed in
-`evals/results/results-local-t4x2.json` and reproducible from the
-[`clef-compactor-evals`](https://www.kaggle.com/code/gjusev/clef-compactor-evals)
-kernel.
+`clef-flash` 9B in float16 on **2× Kaggle T4 GPUs**, evaluated over 20 labelled cases (104 chunks). The evaluation data and result are committed in this repository; the GPU run is available in the [Kaggle notebook ↗](https://www.kaggle.com/code/gjusev/clef-compactor-evals).
 
-| metric | value |
-|---|---|
-| chunk accuracy | 0.712 |
-| kept precision | 0.771 |
-| relevant recall | 0.746 |
-| kept F1 | 0.758 |
-| context tokens saved | 38.4% |
-| scoring latency p50 / p95 | 1,274 / 1,407 ms |
-| cost per 1k calls | $0.00 (self-hosted weights) |
+| Metric | Result |
+| --- | ---: |
+| Chunk accuracy | 0.712 |
+| Kept precision | 0.771 |
+| Relevant recall | 0.746 |
+| Kept F1 | 0.758 |
+| Context tokens saved | **38.4%** |
+| Scoring latency (p50 / p95) | 1,274 / 1,407 ms |
+| Cost per 1k calls | $0.00 (self-hosted weights) |
 
-**Pipeline validation** — deterministic simulated scorer, same dataset, seed
-20261001 (`python evals/run_eval.py`). Proves the ranking and budget
-machinery, not model quality: chunk accuracy 0.990, kept F1 0.992, 34.0%
-tokens saved.
+Run the deterministic pipeline validation locally:
 
-**Hosted API** — pending credentials; `--mode live` produces it.
+```bash
+python evals/run_eval.py
+```
 
-Reading the real numbers plainly: on a T4 the 9B model makes the right
-keep/drop call 71% of the time, keeps three quarters of the relevant chunks,
-and still removes 38% of the context tokens. Local latency is dominated by
-the modest GPU and the torch fallback for Qwen3.5's linear attention (the
-fast-path kernels were not installed in the kernel); the hosted endpoint
-reports 38.8 ms median for clef-flash on Cloudflare's own hardware.
+The replay scorer validates the ranking and budget machinery—not model quality—and scores 0.990 chunk accuracy, 0.992 kept F1, and 34.0% saved tokens. For a live hosted-API run, configure credentials and use `python evals/run_eval.py --mode live`.
 
-## clef vs laya
+### Clef and Laya: the decision-quality trade-off
 
-Published numbers from Cloudflare's blog post
-["Introducing Clef"](https://blog.cloudflare.com/clef-decision-models/):
+Published figures from Cloudflare's [Introducing Clef](https://blog.cloudflare.com/clef-decision-models/) post:
 
-| benchmark | clef | clef-flash | laya |
-|---|---|---|---|
+| Benchmark | Clef | Clef Flash | Laya |
+| --- | ---: | ---: | ---: |
 | BFCL, case exact | 98.47 | **98.76** | 38.13 |
 | ToolRet, nDCG@10 | **69.19** | 66.43 | 12.69 |
 | API-Bank accuracy | 91.93 | **93.11** | 11.41 |
-| median latency, ms | 209.3 | 38.8 | **5.8** |
-| p95 latency, ms | 238.6 | 122.4 | 222.5 |
-| context window | 65,536 | 65,536 | 32k (reported) |
+| Median latency | 209.3 ms | 38.8 ms | **5.8 ms** |
+| Context window | 65,536 | 65,536 | 32k (reported) |
 
-Trade-off in plain terms: laya is faster (5.8 ms median because it runs
-locally), clef is far more accurate on decision benchmarks, and clef-flash is
-the middle path. clef-compactor adds one network round trip per 64 chunks on
-top of the model latency, and it batches, so a 12-chunk batch is one call.
+In short: Laya is the lower-latency local option; Clef gives substantially stronger decision quality; Clef Flash is the pragmatic middle ground. clef-compactor adds one network round trip per 64 chunks.
 
 ## Configuration
 
-| variable | default | meaning |
-|---|---|---|
-| `CLEF_ACCOUNT_ID` (or `CLOUDFLARE_ACCOUNT_ID`) | required | Cloudflare account id |
-| `CLEF_API_TOKEN` (or `CLOUDFLARE_API_TOKEN`) | required | token with Workers AI run permission |
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `CLEF_ACCOUNT_ID` / `CLOUDFLARE_ACCOUNT_ID` | required | Cloudflare account ID |
+| `CLEF_API_TOKEN` / `CLOUDFLARE_API_TOKEN` | required | Token with Workers AI run permission |
 | `CLEF_MODEL` | `clef` | `clef` or `clef-flash` |
-| `CLEF_BASE_URL` | `https://api.cloudflare.com/client/v4` | override for AI Gateway or tests |
-| `CLEF_TIMEOUT` | `60` | per-request timeout, seconds |
-| `CLEF_MAX_RETRIES` | `2` | retries for 408/429/5xx and network errors |
-| `CLEF_LOG_LEVEL` | `WARNING` | stdlib level for the `clef_compactor` logger |
+| `CLEF_BASE_URL` | Cloudflare v4 API | Override for AI Gateway or tests |
+| `CLEF_TIMEOUT` | `60` | Per-request timeout in seconds |
+| `CLEF_MAX_RETRIES` | `2` | Retries for 408 / 429 / 5xx and network failures |
+| `CLEF_LOG_LEVEL` | `WARNING` | Standard-library logger level |
 
-Errors are structured: everything derives from `ClefError`, so one `except`
-catches auth (401/403), rate limits (429 with `retry_after`), server errors,
-timeouts and malformed responses. Retries use exponential backoff with jitter
-and honor `Retry-After`.
+Errors derive from `ClefError`, so a single `except` covers authentication, rate limits (including `retry_after`), server failures, timeouts, network errors, and malformed responses. Retries use exponential backoff with jitter and honour `Retry-After`.
 
 ## Limitations
 
-- **Real-model numbers are from a 9B model on a T4 pair, not from the hosted
-  endpoint.** The hosted API (and the 27B model, which needs ~54 GB) may
-  score better. Measuring the hosted endpoint is one command away:
-  `--mode live` with credentials.
-- **Latency.** clef's median decision latency is 209 ms (38.8 ms for
-  clef-flash) plus network. laya keeps the whole job local at 5.8 ms. If you
-  need sub-10 ms compaction on every request, see
-  [laya-compactor](https://github.com/Gjusev/laya-compactor).
-- **Token counting is an estimate.** The default `cl100k_base` encoding is a
-  close proxy, not Cloudflare's tokenizer. Budgets are enforced on the
-  estimate.
-- **64 questions per request.** Larger batches are split into multiple calls;
-  a 200-chunk batch costs 4 calls and pays network latency 4 times.
-- **Previews, not full chunks, are scored by default.** `chunk_preview_chars`
-  is 512 to keep requests small. Raise it toward the 64k window when chunks
-  carry context deep into their body.
-- **Relevance is binary under the hood.** Clef answers P(relevant); there is
-  no graded "supporting vs essential" signal, and the threshold (default 0.5)
-  is a blunt but predictable cut.
+- **Evaluation scope.** The local result is from a 9B model on two T4 GPUs—not Cloudflare's hosted endpoint or the larger 27B model. Run `--mode live` before quoting hosted-model quality.
+- **Latency.** Model decision latency is 209 ms for Clef and 38.8 ms for Clef Flash, plus network time. If every millisecond matters, see [laya-compactor](https://github.com/Gjusev/laya-compactor).
+- **Estimated token counts.** Budgets use `cl100k_base` as a close proxy rather than Cloudflare's exact tokenizer.
+- **Preview scoring.** Only the first 512 characters of each chunk are scored by default. Increase `chunk_preview_chars` if important context is deep in a chunk.
+- **Binary relevance.** Clef emits `P(relevant)`, not a graded “supporting vs. essential” signal.
 
-## Status
+## Social preview
 
-v0.2.0. The API surface (ClefCompactor, AsyncClefCompactor, Settings, the
-exception hierarchy) is settling but not frozen. The evals gate
-(`--min-accuracy`) runs on every push, and publish happens through GitHub
-releases with PyPI trusted publishing.
+<img src="assets/social-preview-v2.png" alt="Social preview artwork: document cards pass through a relevance filter, with useful context continuing in green and irrelevant context redirected in red" width="100%" />
+
+The new social asset is available at [`assets/social-preview-v2.png`](assets/social-preview-v2.png). Set it as the repository's social preview in GitHub under **Settings → General → Social preview**.
+
+## Project links
+
+<div align="center">
+
+[PyPI](https://pypi.org/project/clef-compactor/) · [Source](https://github.com/Gjusev/clef-compactor) · [Issues](https://github.com/Gjusev/clef-compactor/issues) · [Releases](https://github.com/Gjusev/clef-compactor/releases) · [Kaggle notebook](https://www.kaggle.com/code/gjusev/clef-compactor-evals) · [Cloudflare Clef](https://huggingface.co/Cloudflare/clef)
+
+</div>
 
 ## License
 
-Apache 2.0. Clef itself is open source on
-[Hugging Face](https://huggingface.co/Cloudflare/clef) under the same license.
+Apache-2.0. Clef itself is open source on [Hugging Face](https://huggingface.co/Cloudflare/clef) under the same license.
