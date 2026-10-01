@@ -260,6 +260,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         transport = "https://api.cloudflare.com"
         cost_model = "input tokens x $0.24/M (Cloudflare published price)"
     elif args.mode == "local":
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
         from backends import LocalClefClient
 
         model_label = args.model_path.split("/")[-1]
