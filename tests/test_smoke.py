@@ -2,15 +2,29 @@
 
 from __future__ import annotations
 
+import re
+from pathlib import Path
+
 import clef_compactor
 from clef_compactor import AsyncClefClient, AsyncClefCompactor, ClefClient, ClefCompactor
 from conftest import envelope, noul_answer
 
 
 def test_package_exposes_version() -> None:
-    from importlib.metadata import version
+    """``__version__`` stays in lockstep with the declared package version.
 
-    assert clef_compactor.__version__ == version("clef-compactor")
+    Prefers the source-of-truth ``pyproject.toml``; falls back to the
+    installed distribution metadata when only a wheel is present.
+    """
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    if pyproject.exists():
+        declared = re.search(r'^version = "(.+?)"', pyproject.read_text(encoding="utf-8"), re.MULTILINE)
+        assert declared, "version not found in pyproject.toml"
+        assert clef_compactor.__version__ == declared.group(1)
+    else:
+        from importlib.metadata import version
+
+        assert clef_compactor.__version__ == version("clef-compactor")
 
 
 def test_public_api_surface() -> None:
