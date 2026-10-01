@@ -8,7 +8,9 @@ from conftest import envelope, noul_answer
 
 
 def test_package_exposes_version() -> None:
-    assert clef_compactor.__version__ == "0.2.0"
+    from importlib.metadata import version
+
+    assert clef_compactor.__version__ == version("clef-compactor")
 
 
 def test_public_api_surface() -> None:
