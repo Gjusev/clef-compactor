@@ -93,14 +93,18 @@ class LocalClefClient:
 
     @staticmethod
     def _last_device(backbone: Any) -> Any:
-        """The device holding the backbone's final layers (head must match)."""
+        """The device holding the backbone's final layers (head must match).
+
+        ``hf_device_map`` values may be ints (``0``, ``1``) or strings
+        (``"cuda:1"``); normalise both.
+        """
         import torch
 
-        devices = {str(value) for value in getattr(backbone, "hf_device_map", {}).values()}
-        parsed = [torch.device(value) for value in devices]
-        if not parsed:
-            return torch.device("cuda")
-        return max(parsed, key=lambda device: device.index or 0)
+        devices = list(getattr(backbone, "hf_device_map", {}).values())
+        if not devices:
+            return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        indexes = [int(str(value).split(":")[-1]) for value in devices]
+        return torch.device("cuda", max(indexes))
 
     def ask(
         self,
