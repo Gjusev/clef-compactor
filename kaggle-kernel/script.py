@@ -29,7 +29,8 @@ run("git clone --depth 1 https://github.com/Gjusev/clef-compactor.git")
 run(f"{sys.executable} -m pip install -q --no-input ./clef-compactor")
 run(f"{sys.executable} -m pip install -q --no-input 'transformers==5.10.2' accelerate safetensors")
 
-run(f"{sys.executable} -c 'import torch, transformers; print(\"torch\", torch.__version__, \"cuda\", torch.cuda.is_available(), \"transformers\", transformers.__version__)'")
+run(f"{sys.executable} -c 'import torch, transformers; "
+    "print(torch.__version__, torch.cuda.is_available(), transformers.__version__)'")
 
 # 2. The measurement: full pipeline (batching, ranking, budget) against the
 #    locally loaded clef-flash weights, scored on the committed gold dataset.
