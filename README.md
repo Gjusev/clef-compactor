@@ -153,21 +153,38 @@ query_engine = RetrieverQueryEngine(
 
 ## Measured results
 
-Replay run (deterministic simulated scorer, 20 cases, 104 chunks, seed
-20261001, reproducible with `python evals/run_eval.py`). This validates the
-pipeline, not model quality; see [Limitations](#limitations).
+Three measurement sources, each labelled for what it actually proves.
+
+**Real model, modest hardware** — open-weights `Cloudflare/clef-flash` (9B),
+float16 sharded across 2x Kaggle T4, 20 cases, 104 chunks. Produced by
+`python evals/run_eval.py --mode local`; results committed in
+`evals/results/results-local-t4x2.json` and reproducible from the
+[`clef-compactor-evals`](https://www.kaggle.com/code/gjusev/clef-compactor-evals)
+kernel.
 
 | metric | value |
 |---|---|
-| chunk accuracy | 0.990 |
-| kept precision | 1.000 |
-| relevant recall | 0.984 |
-| kept F1 | 0.992 |
-| context tokens saved | 34.0% |
-| cost per 1k calls | $0.019 (input tokens at $0.24/M) |
+| chunk accuracy | 0.712 |
+| kept precision | 0.771 |
+| relevant recall | 0.746 |
+| kept F1 | 0.758 |
+| context tokens saved | 38.4% |
+| scoring latency p50 / p95 | 1,274 / 1,407 ms |
+| cost per 1k calls | $0.00 (self-hosted weights) |
 
-Live-API numbers are pending credentials and will replace these once a run
-lands. The harness is ready: `python evals/run_eval.py --mode live`.
+**Pipeline validation** — deterministic simulated scorer, same dataset, seed
+20261001 (`python evals/run_eval.py`). Proves the ranking and budget
+machinery, not model quality: chunk accuracy 0.990, kept F1 0.992, 34.0%
+tokens saved.
+
+**Hosted API** — pending credentials; `--mode live` produces it.
+
+Reading the real numbers plainly: on a T4 the 9B model makes the right
+keep/drop call 71% of the time, keeps three quarters of the relevant chunks,
+and still removes 38% of the context tokens. Local latency is dominated by
+the modest GPU and the torch fallback for Qwen3.5's linear attention (the
+fast-path kernels were not installed in the kernel); the hosted endpoint
+reports 38.8 ms median for clef-flash on Cloudflare's own hardware.
 
 ## clef vs laya
 
@@ -207,9 +224,10 @@ and honor `Retry-After`.
 
 ## Limitations
 
-- **The committed accuracy numbers come from a simulated scorer.** They prove
-  the pipeline ranks and cuts correctly under noisy probabilities. They do not
-  measure Clef. Run `--mode live` before quoting quality.
+- **Real-model numbers are from a 9B model on a T4 pair, not from the hosted
+  endpoint.** The hosted API (and the 27B model, which needs ~54 GB) may
+  score better. Measuring the hosted endpoint is one command away:
+  `--mode live` with credentials.
 - **Latency.** clef's median decision latency is 209 ms (38.8 ms for
   clef-flash) plus network. laya keeps the whole job local at 5.8 ms. If you
   need sub-10 ms compaction on every request, see

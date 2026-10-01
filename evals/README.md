@@ -16,7 +16,10 @@ by hand against the query; they are the ground truth for every metric.
 # Pipeline validation: real compaction code, deterministic simulated scorer
 python evals/run_eval.py
 
-# Real quality numbers: needs CLEF_ACCOUNT_ID and CLEF_API_TOKEN
+# Real model weights, no Cloudflare account: 9B on a local GPU (T4 pair tested)
+python evals/run_eval.py --mode local --model-path Cloudflare/clef-flash
+
+# Hosted endpoint: the published prices and latencies apply
 python evals/run_eval.py --mode live
 
 # CI gate: exit code 1 when chunk accuracy drops below the threshold
@@ -25,6 +28,16 @@ python evals/run_eval.py --min-accuracy 0.9
 # Published Clef vs laya numbers, side by side
 python evals/run_eval.py --compare-laya
 ```
+
+## Measured so far
+
+`results/results.json` is the replay baseline (simulated scorer).
+`results/results-local-t4x2.json` is the real open-weights clef-flash 9B
+measured on a Kaggle T4 pair via the
+[`clef-compactor-evals`](https://www.kaggle.com/code/gjusev/clef-compactor-evals)
+kernel: chunk accuracy 0.712, kept F1 0.758, 38.4% of context tokens removed,
+scoring latency ~1.27 s p50 (T4, torch attention fallback). The 27B model
+needs ~54 GB and does not fit on that hardware.
 
 Every run writes `results/results.json`: aggregate metrics plus one entry per
 case. The committed file was produced by `--mode replay`, so it is

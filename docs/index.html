@@ -164,16 +164,17 @@
 
 <section id="results" class="wrap">
   <div class="kicker">measured results</div>
-  <h2 class="serif">Replay baseline, committed and reproducible</h2>
-  <p class="lede">Deterministic simulated scorer, 20 cases, 104 chunks, seed 20261001. This validates the pipeline; it does not measure Clef. Live numbers land via <span class="mono">evals/run_eval.py --mode live</span>.</p>
+  <h2 class="serif">Real model, measured on real hardware</h2>
+  <p class="lede">Open-weights clef-flash 9B, float16 on 2x Kaggle T4, 20 hand-labelled cases, 104 chunks. Reproducible from the <a href="https://www.kaggle.com/code/gjusev/clef-compactor-evals">public kernel</a>. The replay baseline (simulated scorer) and a hosted-API run are documented in the repo.</p>
   <table class="reveal" style="--i:1">
-    <tr><th>metric</th><th>value</th></tr>
-    <tr><td>chunk accuracy</td><td class="num">0.990</td></tr>
-    <tr><td>kept precision</td><td class="num">1.000</td></tr>
-    <tr><td>relevant recall</td><td class="num">0.984</td></tr>
-    <tr><td>kept F1</td><td class="num">0.992</td></tr>
-    <tr><td>context tokens saved</td><td class="num best">34.0%</td></tr>
-    <tr><td>cost per 1k calls</td><td class="num">$0.019</td></tr>
+    <tr><th>metric</th><th>open-weights 9B on 2xT4</th><th>replay baseline</th></tr>
+    <tr><td>chunk accuracy</td><td class="num">0.712</td><td class="num">0.990</td></tr>
+    <tr><td>kept precision</td><td class="num">0.771</td><td class="num">1.000</td></tr>
+    <tr><td>relevant recall</td><td class="num">0.746</td><td class="num">0.984</td></tr>
+    <tr><td>kept F1</td><td class="num">0.758</td><td class="num">0.992</td></tr>
+    <tr><td>context tokens saved</td><td class="num best">38.4%</td><td class="num">34.0%</td></tr>
+    <tr><td>scoring latency p50</td><td class="num">1,274 ms</td><td class="num">&lt;1 ms</td></tr>
+    <tr><td>cost per 1k calls</td><td class="num best">$0.00 self-hosted</td><td class="num">$0.019</td></tr>
   </table>
 </section>
 
