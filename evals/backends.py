@@ -125,7 +125,7 @@ class LocalClefClient:
             "questions": questions,
         }
         started = time.perf_counter()
-        response = systemone(self.model, self.processor, request, max_length=self.max_length)
+        response = systemone(self._collate_on_head_device(), self.processor, request, max_length=self.max_length)
         latency_ms = (time.perf_counter() - started) * 1000
         return ClefReply(
             model=str(response["model"]),
@@ -134,3 +134,26 @@ class LocalClefClient:
             request_id="local-weights",
             latency_ms=latency_ms,
         )
+
+    def _collate_on_head_device(self) -> Any:
+        """View of the model whose first parameter lives where the head does.
+
+        ``systemone`` collates the batch onto ``next(model.parameters()).device``.
+        Across a sharded load, the joint head reads ``token_ids`` from the batch
+        and indexes tensors on its own device, so the batch must be collated on
+        the head's device; accelerate's hooks move the backbone inputs to the
+        first shard as usual.
+        """
+        inner = self.model
+
+        class _CollateOnHeadDevice:
+            def parameters(self, *args: Any, **kwargs: Any) -> Any:
+                return inner.head.parameters()
+
+            def __call__(self, batch: dict[str, Any]) -> Any:
+                return inner(batch)
+
+            def __getattr__(self, name: str) -> Any:
+                return getattr(inner, name)
+
+        return _CollateOnHeadDevice()
