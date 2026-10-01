@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" font-family="Georgia, 'Times New Roman', serif">
+  <defs>
+    <style>
+      .bg { fill: #F7F6F3; }
+      .ink { fill: #1A1A18; }
+      .muted { fill: #787774; }
+      .mono { font-family: 'Consolas', 'JetBrains Mono', monospace; }
+      .head { font-size: 34px; letter-spacing: -0.5px; }
+      .small { font-size: 15px; }
+      .chip-keep { fill: #EDF3EC; stroke: #E3E2DE; }
+      .chip-cut { fill: #FDEBEC; stroke: #E3E2DE; }
+      .chip-warn { fill: #FBF3DB; stroke: #E3E2DE; }
+      .keep-text { fill: #346538; }
+      .cut-text { fill: #9F2F2D; }
+      .warn-text { fill: #956400; }
+    </style>
+  </defs>
+
+  <rect class="bg" width="960" height="540"/>
+  <text class="mono muted small" x="72" y="64">clef-compactor</text>
+  <line x1="72" y1="84" x2="888" y2="84" stroke="#E3E2DE"/>
+  <text class="ink head" x="72" y="140">One question per chunk. One call per 64 chunks.</text>
+
+  <!-- query -->
+  <text class="mono muted" x="72" y="196">query: "What is the refund policy?"</text>
+
+  <!-- chunk bars flow toward the gate -->
+  <g>
+    <rect x="72" y="240" width="300" height="44" rx="9" fill="#1A1A18">
+      <animate attributeName="x" values="72;72" dur="0.1s" fill="freeze"/>
+    </rect>
+    <text class="mono" x="88" y="268" font-size="15" fill="#F7F6F3">doc 1  refunds within 30 days</text>
+    <text class="mono keep-text" x="330" y="268" font-size="16" font-weight="bold">P=0.93</text>
+
+    <rect x="72" y="300" width="300" height="44" rx="9" fill="#9F2F2D" opacity="0.12">
+      <animate attributeName="opacity" values="0;1" begin="0.4s" dur="0.4s" fill="freeze"/>
+    </rect>
+    <rect x="72" y="300" width="300" height="44" rx="9" fill="none" stroke="#9F2F2D" stroke-opacity="0.35">
+      <animate attributeName="opacity" values="0;1" begin="0.4s" dur="0.4s" fill="freeze"/>
+    </rect>
+    <text class="mono muted" x="88" y="328" font-size="15">doc 2  Eiffel Tower is in Paris</text>
+    <text class="mono cut-text" x="330" y="328" font-size="16" font-weight="bold">P=0.05</text>
+
+    <rect x="72" y="360" width="300" height="44" rx="9" fill="#1A1A18">
+      <animate attributeName="opacity" values="0;1" begin="0.8s" dur="0.4s" fill="freeze"/>
+    </rect>
+    <text class="mono" x="88" y="388" font-size="15" fill="#F7F6F3">doc 3  refunds to original method</text>
+    <text class="mono keep-text" x="330" y="388" font-size="16" font-weight="bold">P=0.85</text>
+
+    <rect x="72" y="420" width="300" height="44" rx="9" fill="#1A1A18" opacity="0.85">
+      <animate attributeName="opacity" values="0;1" begin="1.2s" dur="0.4s" fill="freeze"/>
+    </rect>
+    <text class="mono" x="88" y="448" font-size="15" fill="#F7F6F3">doc 5  email support to start</text>
+    <text class="mono keep-text" x="330" y="448" font-size="16" font-weight="bold">P=0.71</text>
+
+    <rect x="72" y="480" width="300" height="44" rx="9" fill="#956400" opacity="0.12">
+      <animate attributeName="opacity" values="0;1" begin="1.6s" dur="0.4s" fill="freeze"/>
+    </rect>
+    <rect x="72" y="480" width="300" height="44" rx="9" fill="none" stroke="#956400" stroke-opacity="0.35">
+      <animate attributeName="opacity" values="0;1" begin="1.6s" dur="0.4s" fill="freeze"/>
+    </rect>
+    <text class="mono muted" x="88" y="508" font-size="15">doc 4  office hours 9am to 5pm</text>
+    <text class="mono warn-text" x="330" y="508" font-size="16" font-weight="bold">P=0.42</text>
+  </g>
+
+  <!-- the gate -->
+  <line x1="440" y1="220" x2="440" y2="530" stroke="#787774" stroke-width="3">
+    <animate attributeName="stroke-opacity" values="0;1;0.55;1" dur="3s" repeatCount="indefinite"/>
+  </line>
+  <text class="mono muted small" x="398" y="206">threshold 0.50</text>
+
+  <!-- kept stack -->
+  <g>
+    <rect class="chip-keep" x="520" y="240" width="300" height="44" rx="9">
+      <animate attributeName="opacity" values="0;1" begin="1.1s" dur="0.4s" fill="freeze"/>
+    </rect>
+    <text class="mono keep-text" x="536" y="268" font-size="15">doc 1  kept</text>
+
+    <rect class="chip-keep" x="520" y="300" width="300" height="44" rx="9">
+      <animate attributeName="opacity" values="0;1" begin="1.5s" dur="0.4s" fill="freeze"/>
+    </rect>
+    <text class="mono keep-text" x="536" y="328" font-size="15">doc 3  kept</text>
+
+    <rect class="chip-keep" x="520" y="360" width="300" height="44" rx="9">
+      <animate attributeName="opacity" values="0;1" begin="1.9s" dur="0.4s" fill="freeze"/>
+    </rect>
+    <text class="mono keep-text" x="536" y="388" font-size="15">doc 5  kept</text>
+  </g>
+
+  <!-- cut outcomes -->
+  <g>
+    <rect class="chip-cut" x="520" y="430" width="300" height="40" rx="9">
+      <animate attributeName="opacity" values="0;1" begin="2.2s" dur="0.4s" fill="freeze"/>
+    </rect>
+    <text class="mono cut-text" x="536" y="455" font-size="14">doc 2  cut: irrelevant</text>
+
+    <rect class="chip-warn" x="520" y="480" width="300" height="40" rx="9">
+      <animate attributeName="opacity" values="0;1" begin="2.5s" dur="0.4s" fill="freeze"/>
+    </rect>
+    <text class="mono warn-text" x="536" y="505" font-size="14">doc 4  cut: budget_exhausted</text>
+  </g>
+
+  <!-- summary -->
+  <g>
+    <animate attributeName="opacity" values="0;1" begin="2.9s" dur="0.5s" fill="freeze"/>
+    <text class="ink head" x="868" y="268" text-anchor="end" font-size="28">1,024 to 676</text>
+    <text class="mono keep-text small" x="868" y="296" text-anchor="end">tokens saved: 34%</text>
+  </g>
+</svg>

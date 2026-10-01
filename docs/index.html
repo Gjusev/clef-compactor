@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>clef-compactor — keep the evidence, cut the noise</title>
+<meta name="description" content="Query-aware RAG context compaction with Cloudflare Clef. Score a whole retrieval batch against the query in one API call and keep the chunks worth sending to your LLM.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --canvas: #F7F6F3;
+    --surface: #FFFFFF;
+    --ink: #1A1A18;
+    --body: #3F3F3C;
+    --muted: #787774;
+    --border: #EAEAEA;
+    --keep-bg: #EDF3EC; --keep-fg: #346538;
+    --cut-bg: #FDEBEC;  --cut-fg: #9F2F2D;
+    --warn-bg: #FBF3DB; --warn-fg: #956400;
+    --info-bg: #E1F3FE; --info-fg: #1F6C9F;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--canvas);
+    color: var(--body);
+    font-family: 'Geist', 'Helvetica Neue', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+  .serif { font-family: 'Newsreader', Georgia, serif; letter-spacing: -0.02em; }
+  .mono { font-family: 'Geist Mono', 'Consolas', monospace; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  section { padding: 88px 0; }
+  h2 { font-size: 30px; color: var(--ink); font-weight: 600; margin-bottom: 10px; }
+  .kicker { font-family: 'Geist Mono', monospace; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  p.lede { max-width: 62ch; }
+
+  /* nav */
+  nav { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(6px); background: rgba(247,246,243,0.88); border-bottom: 1px solid var(--border); }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 58px; }
+  .brand { color: var(--ink); font-weight: 600; text-decoration: none; font-size: 15px; }
+  .nav-links { display: flex; gap: 22px; font-size: 14px; }
+  .nav-links a { color: var(--muted); text-decoration: none; }
+  .nav-links a:hover { color: var(--ink); }
+  .btn { display: inline-block; background: var(--ink); color: #fff; text-decoration: none; font-size: 14px; padding: 9px 16px; border-radius: 5px; transition: transform .15s cubic-bezier(0.16,1,0.3,1), background .15s; }
+  .btn:hover { background: #333; }
+  .btn:active { transform: scale(0.98); }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--border); }
+
+  /* hero: asymmetric split */
+  .hero { display: grid; grid-template-columns: 5fr 6fr; gap: 56px; align-items: center; padding: 96px 0 88px; }
+  .hero h1 { font-size: clamp(40px, 5.4vw, 62px); line-height: 1.06; color: var(--ink); font-weight: 600; }
+  .hero h1 .dim { color: var(--muted); }
+  .hero p { margin-top: 20px; max-width: 52ch; }
+  .hero-cta { margin-top: 30px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .install { font-family: 'Geist Mono', monospace; font-size: 14px; color: var(--ink); border: 1px solid var(--border); background: var(--surface); padding: 9px 14px; border-radius: 5px; }
+  .install span { color: var(--muted); }
+  .video-frame { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px; box-shadow: 0 20px 40px -30px rgba(0,0,0,0.18); }
+  .video-frame video { width: 100%; display: block; border-radius: 7px; }
+  .video-caption { font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--muted); padding: 10px 4px 2px; display: flex; justify-content: space-between; }
+
+  /* bento */
+  .bento { display: grid; grid-template-columns: 7fr 5fr; gap: 20px; margin-top: 36px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 30px 32px; transition: box-shadow .2s; }
+  .card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .card h3 { font-size: 18px; color: var(--ink); margin-bottom: 8px; font-weight: 600; }
+  .card p { font-size: 14.5px; }
+  .card.tall { grid-row: span 2; display: flex; flex-direction: column; }
+  .card.tall svg { width: 100%; height: auto; margin-top: 16px; border: 1px solid var(--border); border-radius: 8px; }
+  .tag { display: inline-block; font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; border-radius: 9999px; padding: 3px 10px; margin-bottom: 12px; }
+  .tag.keep { background: var(--keep-bg); color: var(--keep-fg); }
+  .tag.cut { background: var(--cut-bg); color: var(--cut-fg); }
+  .tag.info { background: var(--info-bg); color: var(--info-fg); }
+
+  /* tables */
+  table { width: 100%; border-collapse: collapse; margin-top: 26px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  th, td { text-align: left; padding: 12px 18px; border-bottom: 1px solid var(--border); font-size: 14.5px; }
+  th { font-family: 'Geist Mono', monospace; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 500; }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-family: 'Geist Mono', monospace; }
+  .best { color: var(--keep-fg); font-weight: 600; }
+
+  /* code */
+  pre { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; overflow-x: auto; font-family: 'Geist Mono', monospace; font-size: 13.5px; line-height: 1.7; color: var(--ink); margin-top: 26px; }
+  pre .c { color: var(--muted); }
+  pre .k { color: #1F6C9F; }
+  pre .s { color: #346538; }
+
+  /* limitation list */
+  .limits { margin-top: 26px; border-top: 1px solid var(--border); }
+  .limits li { list-style: none; padding: 16px 4px; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 210px 1fr; gap: 18px; font-size: 14.5px; }
+  .limits li strong { color: var(--ink); font-weight: 600; }
+
+  footer { border-top: 1px solid var(--border); padding: 40px 0 64px; color: var(--muted); font-size: 13.5px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  footer a { color: var(--ink); }
+
+  /* scroll reveal */
+  .reveal { opacity: 0; transform: translateY(12px); transition: opacity .6s cubic-bezier(0.16,1,0.3,1), transform .6s cubic-bezier(0.16,1,0.3,1); transition-delay: calc(var(--i, 0) * 80ms); }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (max-width: 860px) {
+    .hero, .bento { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+    .limits li { grid-template-columns: 1fr; gap: 4px; }
+    section { padding: 64px 0; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap nav-inner">
+    <a class="brand mono" href="#">clef-compactor</a>
+    <div class="nav-links">
+      <a href="#how">how it works</a>
+      <a href="#results">results</a>
+      <a href="#vs">clef vs laya</a>
+      <a href="#limits">limitations</a>
+    </div>
+    <a class="btn" href="https://pypi.org/project/clef-compactor/">pip install clef-compactor</a>
+  </div>
+</nav>
+
+<header class="wrap hero">
+  <div>
+    <h1 class="serif">Keep the evidence.<br><span class="dim">Cut the noise.</span></h1>
+    <p>Score a whole retrieval batch against the query in one Clef call, then fill a token budget with the chunks worth sending to your LLM. Chunks are kept verbatim or removed with a recorded reason, so citations stay auditable.</p>
+    <div class="hero-cta">
+      <span class="install">pip install clef-compactor</span>
+      <a class="btn ghost" href="https://github.com/Gjusev/clef-compactor">source</a>
+    </div>
+  </div>
+  <div class="video-frame reveal" style="--i:2">
+    <video src="brag.mp4" poster="brag.jpg" controls muted loop playsinline></video>
+    <div class="video-caption"><span>12s · 1280x720 · no audio</span><span>docs/brag.mp4</span></div>
+  </div>
+</header>
+
+<section id="how" class="wrap">
+  <div class="kicker">how it works</div>
+  <h2 class="serif">One question per chunk. One call per 64 chunks.</h2>
+  <p class="lede">Clef answers P(relevant) for every chunk against your query. The compactor ranks by score, drops what sits below the threshold, and fills the remaining budget with the best chunks. Every cut carries a reason your code can log or display.</p>
+  <div class="bento">
+    <div class="card tall reveal" style="--i:1">
+      <span class="tag info">pipeline</span>
+      <h3>The gate, animated</h3>
+      <p>Batched noul questions, deterministic ranking, greedy budget fill.</p>
+      <object type="image/svg+xml" data="how-it-works.svg" aria-label="Animated diagram: chunks are scored, relevant ones pass the gate, the rest are cut with reasons"></object>
+    </div>
+    <div class="card reveal" style="--i:2">
+      <span class="tag keep">verbatim</span>
+      <h3>Never rewritten</h3>
+      <p>Kept chunks keep their exact text. Summaries would break citations; deletion keeps them honest.</p>
+    </div>
+    <div class="card reveal" style="--i:3">
+      <span class="tag cut">auditable</span>
+      <h3>Reasoned cuts</h3>
+      <p>Each dropped chunk records <span class="mono">irrelevant</span> or <span class="mono">budget_exhausted</span>, plus its score and token count.</p>
+    </div>
+  </div>
+</section>
+
+<section id="results" class="wrap">
+  <div class="kicker">measured results</div>
+  <h2 class="serif">Replay baseline, committed and reproducible</h2>
+  <p class="lede">Deterministic simulated scorer, 20 cases, 104 chunks, seed 20261001. This validates the pipeline; it does not measure Clef. Live numbers land via <span class="mono">evals/run_eval.py --mode live</span>.</p>
+  <table class="reveal" style="--i:1">
+    <tr><th>metric</th><th>value</th></tr>
+    <tr><td>chunk accuracy</td><td class="num">0.990</td></tr>
+    <tr><td>kept precision</td><td class="num">1.000</td></tr>
+    <tr><td>relevant recall</td><td class="num">0.984</td></tr>
+    <tr><td>kept F1</td><td class="num">0.992</td></tr>
+    <tr><td>context tokens saved</td><td class="num best">34.0%</td></tr>
+    <tr><td>cost per 1k calls</td><td class="num">$0.019</td></tr>
+  </table>
+</section>
+
+<section id="vs" class="wrap">
+  <div class="kicker">clef vs laya</div>
+  <h2 class="serif">Different points on the same trade-off</h2>
+  <p class="lede">Published numbers from Cloudflare's "Introducing Clef" blog post. Laya runs locally and wins raw latency; Clef wins decision quality by a wide margin; clef-flash sits in between.</p>
+  <table class="reveal" style="--i:1">
+    <tr><th>benchmark</th><th>clef</th><th>clef-flash</th><th>laya</th></tr>
+    <tr><td>BFCL, case exact</td><td class="num">98.47</td><td class="num best">98.76</td><td class="num">38.13</td></tr>
+    <tr><td>ToolRet, nDCG@10</td><td class="num best">69.19</td><td class="num">66.43</td><td class="num">12.69</td></tr>
+    <tr><td>API-Bank accuracy</td><td class="num">91.93</td><td class="num best">93.11</td><td class="num">11.41</td></tr>
+    <tr><td>median latency, ms</td><td class="num">209.3</td><td class="num">38.8</td><td class="num best">5.8</td></tr>
+    <tr><td>p95 latency, ms</td><td class="num">238.6</td><td class="num best">122.4</td><td class="num">222.5</td></tr>
+    <tr><td>context window</td><td class="num">65,536</td><td class="num">65,536</td><td class="num">32k reported</td></tr>
+  </table>
+</section>
+
+<section id="quickstart" class="wrap">
+  <div class="kicker">quick start</div>
+  <h2 class="serif">Three lines to a smaller context</h2>
+<pre><span class="k">from</span> clef_compactor <span class="k">import</span> ClefCompactor
+
+compactor = ClefCompactor()  <span class="c"># reads CLEF_ACCOUNT_ID / CLEF_API_TOKEN</span>
+result = compactor.compact(<span class="s">"What is the refund policy?"</span>, chunks, token_budget=<span class="s">1000</span>)
+context = <span class="s">"\n\n"</span>.join(result.kept_texts())</pre>
+  <p class="lede" style="margin-top:16px">Async client, CLI, an OpenAI-compatible endpoint and LangChain / LlamaIndex adapters ship in the box. See the <a href="https://github.com/Gjusev/clef-compactor#readme">README</a> for copy-paste examples of each.</p>
+</section>
+
+<section id="limits" class="wrap">
+  <div class="kicker">limitations</div>
+  <h2 class="serif">What this tool is not</h2>
+  <ul class="limits">
+    <li><strong>Not a quality certificate</strong><span>The committed accuracy comes from a simulated scorer. It proves the pipeline ranks and cuts correctly; run <span class="mono">--mode live</span> before quoting model quality.</span></li>
+    <li><strong>Not the fastest option</strong><span>Clef's median decision latency is 209 ms plus network. Laya stays local at 5.8 ms. If you need sub-10 ms on every request, use <a href="https://github.com/Gjusev/laya-compactor">laya-compactor</a>.</span></li>
+    <li><strong>Not exact token math</strong><span>Budgets are enforced with the cl100k_base encoding, a close proxy for Cloudflare's tokenizer rather than the tokenizer itself.</span></li>
+    <li><strong>Not graded relevance</strong><span>Clef answers P(relevant). There is no supporting-versus-essential signal, and the 0.5 threshold is a blunt but predictable cut.</span></li>
+  </ul>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Apache 2.0 · Clef is open source on <a href="https://huggingface.co/Cloudflare/clef">Hugging Face</a></span>
+    <span><a href="https://github.com/Gjusev/clef-compactor">github.com/Gjusev/clef-compactor</a></span>
+  </div>
+</footer>
+
+<script>
+  const observer = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) { entry.target.classList.add('in'); observer.unobserve(entry.target); }
+    }
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal').forEach((el) => observer.observe(el));
+</script>
+</body>
+</html>

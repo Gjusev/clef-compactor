@@ -1,0 +1,19 @@
+{
+  "result": {
+    "model": "@cf/cloudflare/clef",
+    "answers": {
+      "chunk_1": { "type": "noul", "noul": 0.93 },
+      "chunk_2": { "type": "noul", "noul": 0.87 },
+      "chunk_3": { "type": "noul", "noul": 0.05 },
+      "chunk_4": { "type": "noul", "noul": 0.78 },
+      "chunk_5": { "type": "noul", "noul": 0.42 }
+    },
+    "usage": {
+      "input_tokens": 412,
+      "output_tokens": 96
+    }
+  },
+  "success": true,
+  "errors": [],
+  "messages": []
+}
