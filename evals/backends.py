@@ -68,10 +68,9 @@ class LocalClefClient:
         joint_schema_dir = str(path)
         if joint_schema_dir not in sys.path:
             sys.path.insert(0, joint_schema_dir)
-        from joint_schema_model import ClefModel, JointSchemaHead  # type: ignore[import-not-found]
-
         import json
 
+        from joint_schema_model import ClefModel, JointSchemaHead  # type: ignore[import-not-found]
         from safetensors.torch import load_file
         from transformers import AutoProcessor, Qwen3_5ForConditionalGeneration
 
