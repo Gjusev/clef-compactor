@@ -15,7 +15,7 @@ Score an entire retrieval batch against the query, retain the chunks that earn t
 [![Cloudflare Clef](https://img.shields.io/badge/Powered%20by-Cloudflare%20Clef-F38020?logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/workers-ai/models/clef/)
 [![License](https://img.shields.io/badge/License-Apache--2.0-4b5563)](LICENSE)
 
-[Get started](#quick-start) · [Watch the demo](#demo) · [How it works](#how-it-works) · [Benchmarks](#benchmarks) · [Kaggle notebook](https://www.kaggle.com/code/gjusev/clef-compactor-evals)
+[Quick start](#quick-start) · [Watch the demo](#demo) · [How it works](#how-it-works) · [Benchmarks](#benchmarks) · [Kaggle notebook](https://www.kaggle.com/code/gjusev/clef-compactor-evals)
 
 </div>
 
